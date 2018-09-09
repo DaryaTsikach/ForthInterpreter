@@ -1,0 +1,13 @@
+: NOD 
+    2DUP  < IF  SWAP THEN
+    BEGIN DUP
+    WHILE
+        2DUP MOD
+        ROT
+        DROP
+    REPEAT DROP ;
+
+235 100 NOD .
+100 235 NOD .
+100 100 NOD .
+5 7 NOD . 
