@@ -20,8 +20,12 @@ struct Cycle* cycle = NULL;
 struct Cycle* addToCycle(struct Cycle* cycle, char* word) {
     if (cycle == NULL) {
         cycle = malloc(sizeof(struct Cycle));
+        if (cycle == NULL)
+            return NULL;
         cycle->next = NULL;
         cycle->command = malloc(sizeof(char) * strlen(word));
+        if (cycle->command == NULL)
+            return NULL;
         strcpy(cycle->command, word);
         return cycle;
     }
@@ -30,20 +34,27 @@ struct Cycle* addToCycle(struct Cycle* cycle, char* word) {
         current = current->next;
     }
     current->next = malloc(sizeof(struct Cycle));
+    if (current->next == NULL)
+        return NULL;
     current->next->command = malloc(sizeof(char) * strlen(word));
+    if (current->next->command == NULL)
+        return NULL;
     strcpy(current->next->command, word);
     current->next->next = NULL;
     return cycle;
 }
 
-void iterateCycle(struct Cycle* cycle) {
+size_t iterateCycle(struct Cycle* cycle) {
     if (cycle == NULL)
-        return;
+        return MEMORY_EXCEPTION;
     struct Cycle* current = cycle;
     while (current != NULL) {
-        processToken(current->command);
+        size_t exception = processToken(current->command);
+        if (exception > DIV_BY_NULL_EXCEPTION && exception <= MEMORY_EXCEPTION)
+            return exception;
         current = current->next;
     }
+    return NO_EXCEPTIONS;
 }
 
 void freeCycle(struct Cycle* head) {
@@ -56,7 +67,7 @@ void freeCycle(struct Cycle* head) {
    }
 }
 
-int processStackOperation(const size_t operation) {
+size_t processStackOperation(const size_t operation) {
     if (operation == DUP) {
         short int elem = peek(forth_stack);
         push(&forth_stack, elem);
@@ -170,10 +181,10 @@ int processStackOperation(const size_t operation) {
         number += pop(&forth_stack) & 0x0000FFFF;
         printf("%d \n", number);
     }
-    return 1;
+    return NO_EXCEPTIONS;
 }
 
-int processBinaryOperation(size_t operation) {
+size_t processBinaryOperation(size_t operation) {
     if (operation >= ADD && operation <= DIVMOD) {
         short int second_number = pop(&forth_stack);
         short int first_number = pop(&forth_stack);
@@ -187,8 +198,7 @@ int processBinaryOperation(size_t operation) {
             result = first_number * second_number;
         if (operation == DIV) {
             if (second_number == 0) {
-                fprintf(stderr, "ariphmetic error: div by 0 \n");
-                return 0;
+                return DIV_BY_NULL_EXCEPTION;
             }
             result = first_number / second_number;
         }
@@ -198,8 +208,7 @@ int processBinaryOperation(size_t operation) {
             result = first_number % second_number;
             push(&forth_stack, result);
             if (second_number == 0) {
-                fprintf(stderr, "ariphmetic error: div by 0 \n");
-                return 0;
+                return DIV_BY_NULL_EXCEPTION;
             }
             result = first_number / second_number;
         }
@@ -233,8 +242,7 @@ int processBinaryOperation(size_t operation) {
         }
         if (operation == DDIV) {
             if (second_number == 0) {
-                fprintf(stderr, "ariphmetic error: div by 0 \n");
-                return 0;
+                return DIV_BY_NULL_EXCEPTION;
             }
             result = first_number / second_number;
             result_second_part = result & 0x0000FFFF;
@@ -248,10 +256,10 @@ int processBinaryOperation(size_t operation) {
         push(&forth_stack, result_second_part);
         push(&forth_stack, result_first_part);
     }
-    return 1;
+    return NO_EXCEPTIONS;
 }
 
-int processUnaryOperation(size_t operation) {
+size_t processUnaryOperation(size_t operation) {
     if ((operation >= ADD1 && operation <= DIV2) || (operation >= ABS && operation <= NEGATE)) {
         short int number = pop(&forth_stack);
         short int result = 0;
@@ -289,16 +297,16 @@ int processUnaryOperation(size_t operation) {
         push(&forth_stack, result_second_part);
         push(&forth_stack, result_first_part);
     }
-    return 1;
+    return NO_EXCEPTIONS;
 }
 
-int processTernaryOperation(size_t operation) {
+size_t processTernaryOperation(size_t operation) {
     int c = pop(&forth_stack);
     short int b = pop(&forth_stack);
     short int a = pop(&forth_stack);
     short int result = 0;
     if (c == 0) {
-        fprintf(stderr, "ariphmetic error: div by 0 \n");
+        return DIV_BY_NULL_EXCEPTION;
     }
     if (operation == MULDIV) {
         result = (a * b) / c;
@@ -309,10 +317,10 @@ int processTernaryOperation(size_t operation) {
         result = (a * b) / c;
     }
     push(&forth_stack, result);
-    return 1;
+    return NO_EXCEPTIONS;
 }
 
-int processUnsigned(size_t operation) {
+size_t processUnsigned(size_t operation) {
     if (operation == UMMUL) {
         unsigned short int first_number = (unsigned short int)pop(&forth_stack);
         unsigned short int second_number = (unsigned short int)pop(&forth_stack);
@@ -326,20 +334,20 @@ int processUnsigned(size_t operation) {
         unsigned short int first_number = (unsigned short int)pop(&forth_stack);
         unsigned int second_number = (unsigned int)pop(&forth_stack);
         if (first_number == 0) {
-            fprintf(stderr, "ariphmetic error: div by 0 \n");
+            return DIV_BY_NULL_EXCEPTION;
         }
         unsigned short int mod = second_number % first_number;
         int res = second_number / first_number;
         if (res > 65535) {
-            fprintf(stderr, "overflow: the result %d doesn`t not fit in uint16 \n", res);
+            return OVERFLOW_EXCEPTION;
         }
         push(&forth_stack, mod);
         push(&forth_stack, (unsigned short int)res);
     }
-    return 1;
+    return NO_EXCEPTIONS;
 }
 
-int processAriphmetic(size_t operation) {
+size_t processAriphmetic(size_t operation) {
     if ((operation >= ADD && operation <= DIVMOD) || (operation >= DADD && operation <= DMOD)) {
         return processBinaryOperation(operation);
     }
@@ -355,10 +363,10 @@ int processAriphmetic(size_t operation) {
     if (operation == UMMUL || operation == UMDIVMOD) {
         return processUnsigned(operation);
     }
-    return 0;
+    return NO_EXCEPTIONS;
 }
 
-int processBoolean(size_t operation) {
+size_t processBoolean(size_t operation) {
     short int bool1 = pop(&forth_stack);
     short int res = 0;
     if (operation >= NOT && operation <= EQUAL0) {
@@ -422,10 +430,10 @@ int processBoolean(size_t operation) {
             res = 0;
         push(&forth_stack, res);
     }
-    return 1;
+    return NO_EXCEPTIONS;
 }
 
-int executeWord(size_t word) {
+size_t executeWord(size_t word) {
     if (word == ONE_LINE_COMMENT) {
         return ONE_LINE_COMMENT;
     }
@@ -498,27 +506,27 @@ int executeWord(size_t word) {
         }
         skip = FALSE;
     }
-    return 0;
+    return NO_EXCEPTIONS;
 }
 
-int processDefineWord(char* word) {
+size_t processDefineWord(char* word) {
     struct commands* cmd = contains(dictionary, word);
 
     size_t commands_counter = 0;
     while (cmd != NULL) {
-        processToken(cmd->command);
+        size_t exception = processToken(cmd->command);
+        if (exception >= DIV_BY_NULL_EXCEPTION && exception <= MEMORY_EXCEPTION)
+            return exception;
         cmd = cmd->next;
         ++commands_counter;
     }
     if (commands_counter == 0) {
-        fprintf(stderr, "error while processing user define word: %s\n", word);
-        return 0;
+        return PARSE_WORD_EXCEPTION;
     }
-    else
-        return 1;
+    return NO_EXCEPTIONS;
 }
 
-int isNumber(char* token) {
+size_t isNumber(char* token) {
     int i;
     int len = strlen(token);
     for (i = 0; i < len; ++i) {
@@ -543,39 +551,44 @@ int isNumber(char* token) {
     return 1;
 }
 
-int processToken(char* token) {
+size_t processToken(char* token) {
     /*token can be from reserve words or from user define*/
     size_t operation = defineConstant(token);
     if (skip == TRUE && operation != ELSE && operation != THEN && operation != REPEAT)
-        return 0;
+        return NO_EXCEPTIONS;
     if (inCycle == TRUE && operation != UNTIL && operation != REPEAT) {
         cycle = addToCycle(cycle, token);
+        if (cycle == NULL)
+            return MEMORY_EXCEPTION;
     }
     if (operation == NOT_A_WORD) {
         if (isNumber(token)) {
-            return 1;
-        }
-        else if (processDefineWord(token)) {
-           return 1;
+            return NO_EXCEPTIONS;
         }
         else {
-            fprintf(stderr, "error while parsing: unknown word %s \n", token);
-            return (-1);
+            size_t exception = processDefineWord(token);
+            if (exception == NO_EXCEPTIONS)
+                return NO_EXCEPTIONS;
+            else if (exception == PARSE_WORD_EXCEPTION)
+                return PARSE_WORD_EXCEPTION;
+            else
+                return UNKNOWN_WORD_EXCEPTION;
         }
     } else {
         return executeWord(operation);
     }
-    return 0;
+    return NO_EXCEPTIONS;
 }
 
-int addNewWord(char* new_word, struct commands* commands) {
-    addWord(&dictionary, new_word, commands);
-    return 0;
+size_t addNewWord(char* new_word, struct commands* commands) {
+    return addWord(&dictionary, new_word, commands);
 }
 
-int removeWord(char* wordToDel) {
+size_t removeWord(char* wordToDel) {
     dictionary = remove_word(dictionary, wordToDel);
-    return 0;
+    if (dictionary == NULL)
+        return MEMORY_EXCEPTION;
+    return NO_EXCEPTIONS;
 }
 
 size_t defineConstant(char *word) {
@@ -720,4 +733,37 @@ size_t defineConstant(char *word) {
         return REPEAT;
 
     return NOT_A_WORD;
+}
+
+void dealWithException(size_t exception) {
+    switch(exception) {
+    case DIV_BY_NULL_EXCEPTION:
+        fprintf(stderr, "ariphmetic error: div by 0 \n");
+        break;
+    case OVERFLOW_EXCEPTION:
+        fprintf(stderr, "overflow: the result doesn`t not fit in uint16 \n");
+        break;
+    case STACK_EXCEPTION:
+        fprintf(stderr, "stack is empty \n");
+        break;
+    case FILE_NOT_FOUND_EXCEPTION:
+        fprintf(stderr, "program file not found \n");
+        break;
+    case UNKNOWN_WORD_EXCEPTION:
+        fprintf(stderr, "error while parsing: unknown word \n");
+        break;
+    case COMMAND_LINE_ARGUMENTS_EXCEPTION:
+        fprintf(stderr, "wrong number of arguments. expected: 1 \n");
+        break;
+    case PARSE_WORD_EXCEPTION:
+        fprintf(stderr, "error while parsing word \n");
+        break;
+    case INTERPRETE_EXCEPTION:
+        fprintf(stderr, "couldn`t execute ; command at interpreting mode");
+        break;
+    case MEMORY_EXCEPTION:
+        fprintf(stderr, "memory error \n");
+    default:
+        break;
+    }
 }

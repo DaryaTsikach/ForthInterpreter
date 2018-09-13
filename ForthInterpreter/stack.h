@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <limits.h>
 
-
 struct StackNode;
 struct StackNode {
     short int data;

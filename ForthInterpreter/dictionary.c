@@ -1,9 +1,12 @@
 #ifndef DICTIONARY_C
 #define DICTIONARY_C
 #include "dictionary.h"
+#include "constants.h"
 
 struct Word* newWord(char* new_word, struct commands* commands) {
     struct Word* word = (struct Word*)malloc(sizeof(struct Word));
+    if (word == NULL)
+        return NULL;
     word->word = new_word;
     word->commands = commands;
     word->next = NULL;
@@ -14,10 +17,13 @@ int isEmptyDictionary(struct Word* dictionary) {
     return !dictionary;
 }
 
-void addWord(struct Word** dictionary, char* new_word, struct commands* commands) {
+size_t addWord(struct Word** dictionary, char* new_word, struct commands* commands) {
     struct Word* word = newWord(new_word, commands);
+    if (word == NULL)
+        return MEMORY_EXCEPTION;
     word->next = *dictionary;
     *dictionary = word;
+    return NO_EXCEPTIONS;
 }
 
 struct commands* contains(struct Word* dictionary, char* new_word) {
@@ -37,8 +43,12 @@ struct commands* contains(struct Word* dictionary, char* new_word) {
 struct commands* add_new_command(struct commands* words, char* command) {
     if (words == NULL) {
         words = malloc(sizeof(struct commands));
+        if (words == NULL)
+            return NULL;
         words->next = NULL;
         words->command = malloc(sizeof(char) * strlen(command));
+        if (words->command == NULL)
+            return NULL;
         strcpy(words->command, command);
         return words;
     }
@@ -47,7 +57,11 @@ struct commands* add_new_command(struct commands* words, char* command) {
         current = current->next;
     }
     current->next = malloc(sizeof(struct commands));
+    if (current->next == NULL)
+        return NULL;
     current->next->command = malloc(sizeof(char) * strlen(command));
+    if (current->next->command == NULL)
+        return NULL;
     strcpy(current->next->command, command);
     current->next->next = NULL;
     return words;

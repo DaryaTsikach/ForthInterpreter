@@ -5,12 +5,15 @@
 
 #include "run.h"
 
+size_t exception = NO_EXCEPTIONS;
+
 int main(int argc, char* argv[])
 {
     if (argc == 2) {
-        run(argv[1]);
+        exception = run(argv[1]);
     } else {
-        fprintf(stderr, "wrong number of arguments. expected: 1 \n");
+        exception = COMMAND_LINE_ARGUMENTS_EXCEPTION;
     }
-    return 0;
+    dealWithException(exception);
+    return exception;
 }

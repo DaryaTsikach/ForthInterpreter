@@ -23,7 +23,7 @@ struct Word* newWord(char* new_word, struct commands* commands);
 
 int isEmptyDictionary(struct Word* dictionary);
 
-void addWord(struct Word** dictionary, char* word, struct commands* commands);
+size_t addWord(struct Word** dictionary, char* word, struct commands* commands);
 
 struct commands* contains(struct Word* dictionary, char* new_word);
 

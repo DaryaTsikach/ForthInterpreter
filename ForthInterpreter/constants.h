@@ -84,4 +84,16 @@
 #define WHILE               0x5002
 #define REPEAT              0x5003
 
+/*error codes*/
+#define NO_EXCEPTIONS                       0x0000
+#define DIV_BY_NULL_EXCEPTION               0x6001
+#define OVERFLOW_EXCEPTION                  0x6002
+#define STACK_EXCEPTION                     0x6003
+#define FILE_NOT_FOUND_EXCEPTION            0x6004
+#define UNKNOWN_WORD_EXCEPTION              0x6005
+#define COMMAND_LINE_ARGUMENTS_EXCEPTION    0x6006
+#define PARSE_WORD_EXCEPTION                0x6007
+#define INTERPRETE_EXCEPTION                0x6008
+#define MEMORY_EXCEPTION                    0x6009
+
 #endif // CONSTANTS_H
