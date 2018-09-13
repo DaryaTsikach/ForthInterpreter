@@ -511,7 +511,8 @@ size_t executeWord(size_t word) {
 
 size_t processDefineWord(char* word) {
     struct commands* cmd = contains(dictionary, word);
-
+    if (cmd == NULL)
+        return UNKNOWN_WORD_EXCEPTION;
     size_t commands_counter = 0;
     while (cmd != NULL) {
         size_t exception = processToken(cmd->command);
@@ -567,12 +568,7 @@ size_t processToken(char* token) {
         }
         else {
             size_t exception = processDefineWord(token);
-            if (exception == NO_EXCEPTIONS)
-                return NO_EXCEPTIONS;
-            else if (exception == PARSE_WORD_EXCEPTION)
-                return PARSE_WORD_EXCEPTION;
-            else
-                return UNKNOWN_WORD_EXCEPTION;
+            return exception;
         }
     } else {
         return executeWord(operation);
@@ -759,7 +755,7 @@ void dealWithException(size_t exception) {
         fprintf(stderr, "error while parsing word \n");
         break;
     case INTERPRETE_EXCEPTION:
-        fprintf(stderr, "couldn`t execute ; command at interpreting mode");
+        fprintf(stderr, "couldn`t execute ; command at interpreting mode \n");
         break;
     case MEMORY_EXCEPTION:
         fprintf(stderr, "memory error \n");
